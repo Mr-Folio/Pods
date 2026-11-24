@@ -22,32 +22,33 @@ kubectl describe pod/pod-multicontenedor
 
 ---
 
-## 2. Acceso interactivo a cada contenedor (`-c`)
+## 2. Acceso al contenedor, comprobación de `index.html` y redirección de puertos (`port-forward`)
+
+Dentro de `contenedor1` (`root@pod-multicontenedor:/usr/share/nginx/html#`):
 
 ```bash
-kubectl exec pod/pod-multicontenedor -c contenedor1 -it -- /bin/bash
-kubectl exec pod/pod-multicontenedor -c contenedor2 -it -- /bin/bash
+ls
+exit
 ```
 
-**Explicación:**
-- Cuando un Pod tiene más de un contenedor, es necesario indicar con `-c <nombre_contenedor>` a cuál de ellos se quiere acceder.
-- Dentro de `contenedor1` se puede comprobar `/usr/share/nginx/html/index.html` y dentro de `contenedor2` el archivo `/html/index.html`, verificando que ambos ven exactamente el mismo fichero compartido.
-
----
-
-## 3. Redirección de puertos (`port-forward`) y verificación en navegador
+En el equipo local:
 
 ```bash
+kubectl port-forward 6060:80
 kubectl port-forward pod/pod-multicontenedor 6060:80
 ```
 
 **Explicación:**
-- Redirige el puerto local `6060` al puerto `80` del contenedor Nginx (`contenedor1`) dentro del Pod `pod-multicontenedor`.
-- Al abrir `http://localhost:6060` y recargar la página, se irán mostrando las líneas con la fecha y hora generadas cada segundo por `contenedor2`.
+- `ls`: Comprueba dentro de `/usr/share/nginx/html` que existe `index.html`, creado y actualizado por `contenedor2` a través del volumen compartido `html`.
+- `exit`: Cierra la sesión interactiva en el contenedor para volver a la terminal del host.
+- `kubectl port-forward 6060:80`: Primer intento incompleto; `kubectl` devuelve un error indicando que es obligatorio especificar el recurso (`TYPE/NAME`).
+- `kubectl port-forward pod/pod-multicontenedor 6060:80`: Redirige el puerto local `6060` al puerto `80` del Pod `pod-multicontenedor`. Al abrir `http://localhost:6060` en el navegador se visualizan las líneas de fecha y hora (`date`) que `contenedor2` va añadiendo cada segundo a `index.html`.
+
+![Port-forward del Pod multicontenedor](capturas/tarea2/Port-forward_multicontenedor.png)
 
 ---
 
-## 4. Consulta de logs de un contenedor específico
+## 3. Consulta de logs de un contenedor específico
 
 ```bash
 kubectl logs pod/pod-multicontenedor -c contenedor1
